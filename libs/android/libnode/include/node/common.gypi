@@ -143,7 +143,7 @@
           }],
           ['OS == "android"', {
             'cflags': [ '-fPIC' ],
-            'ldflags': [ '-fPIC' ]
+            'ldflags': [ '-fPIC', '-Wl,-z,max-page-size=16384' ]
           }],
         ],
         'msvs_settings': {
@@ -231,7 +231,7 @@
           },],
           ['OS == "android"', {
             'cflags': [ '-fPIC' ],
-            'ldflags': [ '-fPIC' ]
+            'ldflags': [ '-fPIC', '-Wl,-z,max-page-size=16384' ]
           }],
         ],
         'msvs_settings': {
