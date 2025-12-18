@@ -21,6 +21,11 @@ add_library( # Sets the name of the library.
              cordova-bridge.cpp
            )
 
+# Ensure linker uses 16KiB max page size when supported.
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+    target_link_options(nodejs-mobile-cordova-native-lib PRIVATE "-Wl,-z,max-page-size=16384")
+endif()
+
 include_directories(libnode/include/node/)
 
 add_library( libnode
