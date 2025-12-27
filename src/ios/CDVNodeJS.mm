@@ -346,8 +346,6 @@ id appPauseEventsManagerSetLock = [[NSObject alloc] init];
     if(!dlopenoverridePath) {
       arguments = [NSArray arrayWithObjects:
                     @"node",
-                    @"-r",
-                    dlopenoverridePath,
                     @"-e",
                     scriptBody,
                     nil
@@ -355,6 +353,8 @@ id appPauseEventsManagerSetLock = [[NSObject alloc] init];
     } else {
       arguments = [NSArray arrayWithObjects:
                     @"node",
+                    @"-r",
+                    dlopenoverridePath,
                     @"-e",
                     scriptBody,
                     nil
