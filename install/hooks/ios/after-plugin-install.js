@@ -168,6 +168,12 @@ embed_framework()
 }
 find "$CODESIGNING_FOLDER_PATH/www/nodejs-project/" -name "*.framework" -type d | while read frmwrk_path; do embed_framework "$frmwrk_path"; done
 
+# Sign .node files
+find "$CODESIGNING_FOLDER_PATH/www/nodejs-project/" -name "*.node" -type f | while read node_file; do
+    echo "Signing: $node_file"
+    /usr/bin/codesign --force --sign $EXPANDED_CODE_SIGN_IDENTITY --preserve-metadata=identifier,entitlements,flags --timestamp=none "$node_file"
+done
+
 #Delete gyp temporary .deps dependency folders from the project structure.
 find "$CODESIGNING_FOLDER_PATH/www/nodejs-project/" -path "*/.deps/*" -delete
 find "$CODESIGNING_FOLDER_PATH/www/nodejs-project/" -name ".deps" -type d -delete
