@@ -18,9 +18,11 @@ function visitEveryFramework(projectPath) {
           let frameworkContents = fs.readdirSync(currentFilename);
           // Frameworks output by nodejs-mobile-gyp are expected to have only one file inside, corresponding to the proper shared library.
           if (frameworkContents.length != 1) {
-            console.log(
+            console.error(
               'Skipping a ".node". Expected to find only one file inside this path: ' +
-                currentFilename,
+                currentFilename +
+                ". Found: " +
+                frameworkContents.join(", "),
             );
             countInvalidFrameworks++;
           } else {
@@ -28,6 +30,18 @@ function visitEveryFramework(projectPath) {
             let checkFileType = spawnSync("file", [
               path.join(currentFilename, currentBinaryName),
             ]);
+
+            if (checkFileType.error) {
+              console.error(
+                "Failed to run 'file' command on " +
+                  currentBinaryName +
+                  ": " +
+                  checkFileType.error.message,
+              );
+              countInvalidFrameworks++;
+              continue;
+            }
+
             // File inside a .framework should be a dynamically linked shared library.
             if (
               checkFileType.stdout
@@ -44,9 +58,11 @@ function visitEveryFramework(projectPath) {
               foundFrameworks.push(newFrameworkObject);
               countValidFrameworks++;
             } else {
-              console.log(
+              console.error(
                 'Skipping a ".node". Couldn\'t find a dynamically linked shared library inside ' +
-                  currentFilename,
+                  currentFilename +
+                  ". 'file' command output: " +
+                  checkFileType.stdout.toString().trim(),
               );
               countInvalidFrameworks++;
             }
@@ -154,6 +170,16 @@ function visitEveryFramework(projectPath) {
         input: plistXmlContents,
       },
     );
+
+    if (plistGeneration.status !== 0) {
+      console.error(
+        "Error generating plist for " + currentFramework.newFrameworkName,
+      );
+      if (plistGeneration.stderr) {
+        console.error(plistGeneration.stderr.toString());
+      }
+      process.exit(1);
+    }
   }
 
   var frameworkOverrideContents = [];
