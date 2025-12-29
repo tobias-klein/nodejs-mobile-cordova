@@ -8,13 +8,13 @@ function visitEveryFramework(projectPath) {
   var countInvalidFrameworks = 0;
   var countValidFrameworks = 0;
   function recursivelyFindFrameworks(currentPath) {
-    console.log("Visiting: " + currentPath); // Log current directory
     let currentFiles = fs.readdirSync(currentPath);
     for (let i = 0; i < currentFiles.length; i++) {
       let currentFilename = path.normalize(
         path.join(currentPath, currentFiles[i]),
       );
-      if (fs.lstatSync(currentFilename).isDirectory()) {
+      let fileStats = fs.lstatSync(currentFilename);
+      if (fileStats.isDirectory()) {
         if (currentFilename.endsWith(".node")) {
           console.log("Found .node directory: " + currentFilename); // Log found .node
           let frameworkContents = fs.readdirSync(currentFilename);
@@ -50,8 +50,9 @@ function visitEveryFramework(projectPath) {
 
             // File inside a .framework should be a dynamically linked shared library.
             if (
-              fileCommandOutput
-                .indexOf("dynamically linked shared library") > -1
+              fileCommandOutput.indexOf("dynamically linked shared library") >
+                -1 ||
+              fileCommandOutput.indexOf("Mach-O 64-bit bundle") > -1
             ) {
               console.log("Valid framework found: " + currentFilename); // Log success
               let newFrameworkObject = {
@@ -60,6 +61,7 @@ function visitEveryFramework(projectPath) {
                 originalBinaryName: currentBinaryName,
                 newFrameworkName: "",
                 newFrameworkFileName: "",
+                isStandaloneFile: false,
               };
               foundFrameworks.push(newFrameworkObject);
               countValidFrameworks++;
@@ -75,6 +77,48 @@ function visitEveryFramework(projectPath) {
           }
         }
         recursivelyFindFrameworks(currentFilename);
+      } else if (fileStats.isFile() && currentFilename.endsWith(".node")) {
+        console.log("Found .node file: " + currentFilename);
+        let currentBinaryName = path.basename(currentFilename);
+        console.log("Checking binary: " + currentBinaryName);
+        let checkFileType = spawnSync("file", [currentFilename]);
+
+        if (checkFileType.error) {
+          console.error(
+            "Failed to run 'file' command on " +
+              currentBinaryName +
+              ": " +
+              checkFileType.error.message,
+          );
+          countInvalidFrameworks++;
+          continue;
+        }
+
+        let fileCommandOutput = checkFileType.stdout.toString();
+        console.log("'file' output: " + fileCommandOutput.trim());
+
+        if (
+          fileCommandOutput.indexOf("dynamically linked shared library") > -1 ||
+          fileCommandOutput.indexOf("Mach-O 64-bit bundle") > -1
+        ) {
+          console.log("Valid framework found: " + currentFilename);
+          let newFrameworkObject = {
+            originalFileName: currentFilename,
+            originalRelativePath: "",
+            originalBinaryName: currentBinaryName,
+            newFrameworkName: "",
+            newFrameworkFileName: "",
+            isStandaloneFile: true,
+          };
+          foundFrameworks.push(newFrameworkObject);
+          countValidFrameworks++;
+        } else {
+          console.error(
+            'Skipping a ".node". Not a dynamically linked shared library: ' +
+              currentFilename,
+          );
+          countInvalidFrameworks++;
+        }
       }
     }
   }
@@ -115,20 +159,31 @@ function visitEveryFramework(projectPath) {
   for (let i = 0; i < foundFrameworks.length; i++) {
     // Rename the binaries to the new framework structure and add a .plist
     let currentFramework = foundFrameworks[i];
-    fs.renameSync(
-      currentFramework.originalFileName,
-      currentFramework.newFrameworkFileName,
-    );
-    fs.renameSync(
-      path.join(
+    if (currentFramework.isStandaloneFile) {
+      fs.mkdirSync(currentFramework.newFrameworkFileName);
+      fs.renameSync(
+        currentFramework.originalFileName,
+        path.join(
+          currentFramework.newFrameworkFileName,
+          currentFramework.newFrameworkName,
+        ),
+      );
+    } else {
+      fs.renameSync(
+        currentFramework.originalFileName,
         currentFramework.newFrameworkFileName,
-        currentFramework.originalBinaryName,
-      ),
-      path.join(
-        currentFramework.newFrameworkFileName,
-        currentFramework.newFrameworkName,
-      ),
-    );
+      );
+      fs.renameSync(
+        path.join(
+          currentFramework.newFrameworkFileName,
+          currentFramework.originalBinaryName,
+        ),
+        path.join(
+          currentFramework.newFrameworkFileName,
+          currentFramework.newFrameworkName,
+        ),
+      );
+    }
 
     // Read template Info.plist
     let plistXmlContents = fs
