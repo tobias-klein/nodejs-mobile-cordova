@@ -36,6 +36,8 @@ module.exports = function (context) {
   var rebuildNativeModulesBuildPhaseScript = `
 set -e
 
+alias python=python3
+
 # On M1 macs homebrew is located outside /usr/local/bin
 if [[ ! $PATH =~ /opt/homebrew/bin: ]]; then
   PATH="/opt/homebrew/bin/:/opt/homebrew/sbin:$PATH"
