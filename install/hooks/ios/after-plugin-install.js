@@ -174,14 +174,7 @@ find "$CODESIGNING_FOLDER_PATH/www/nodejs-project/" -name "*.a" -type f -delete
 # Create Info.plist for each framework built and loader override.
 PATCH_SCRIPT_DIR="$( cd "$PROJECT_DIR" && cd ../../Plugins/@red-mobile/nodejs-mobile-cordova/install/helper-scripts/ && pwd )"
 NODEJS_PROJECT_DIR="$( cd "$CODESIGNING_FOLDER_PATH" && cd www/nodejs-project/ && pwd )"
-
-# Run the node script and capture the return code
-if ! node "$PATCH_SCRIPT_DIR"/ios-create-plists-and-dlopen-override.js "$NODEJS_PROJECT_DIR"; then
-    echo "error: Failed to run ios-create-plists-and-dlopen-override.js"
-    echo "error: Please check the build logs for more details."
-    exit 1
-fi
-
+node "$PATCH_SCRIPT_DIR"/ios-create-plists-and-dlopen-override.js $NODEJS_PROJECT_DIR
 # Embed every resulting .framework in the application and delete them afterwards.
 embed_framework()
 {
@@ -191,6 +184,12 @@ embed_framework()
     /usr/bin/codesign --force --sign $EXPANDED_CODE_SIGN_IDENTITY --preserve-metadata=identifier,entitlements,flags --timestamp=none "$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/$FRAMEWORK_NAME"
 }
 find "$CODESIGNING_FOLDER_PATH/www/nodejs-project/" -name "*.framework" -type d | while read frmwrk_path; do embed_framework "$frmwrk_path"; done
+
+# Sign .node files
+find "$CODESIGNING_FOLDER_PATH/www/nodejs-project/" -name "*.node" -type f | while read node_file; do
+    echo "Signing: $node_file"
+    /usr/bin/codesign --force --sign $EXPANDED_CODE_SIGN_IDENTITY --preserve-metadata=identifier,entitlements,flags --timestamp=none "$node_file"
+done
 
 #Delete gyp temporary .deps dependency folders from the project structure.
 find "$CODESIGNING_FOLDER_PATH/www/nodejs-project/" -path "*/.deps/*" -delete
