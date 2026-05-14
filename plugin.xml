@@ -33,6 +33,7 @@
     <hook type="after_plugin_add" src="install/hooks/ios/fix-xcframework-path.js" />
     <hook type="after_plugin_install" src="install/hooks/ios/fix-xcframework-path.js" />
     <hook type="after_prepare" src="install/hooks/ios/fix-xcframework-path.js" />
+    <hook type="after_prepare" src="install/hooks/ios/after-plugin-install.js" />
     <hook type="after_prepare" src="install/hooks/both/after-prepare-patch-npm-packages.js" />
     <hook type="after_prepare" src="install/hooks/both/after-prepare-native-modules-preference.js" />
 
