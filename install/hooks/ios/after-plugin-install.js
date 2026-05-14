@@ -15,12 +15,15 @@ module.exports = function (context) {
   xcodeProject.parseSync();
   
   // Find the proper target (Application), as getFirstTarget() might return a test target in newer Xcode versions.
+  // Normalize productType to handle both quoted and unquoted values returned by different xcode parser versions.
+  var APP_PRODUCT_TYPE = "com.apple.product-type.application";
   var firstTargetUUID;
   var targets = xcodeProject.pbxNativeTargetSection();
   for (var key in targets) {
     if (key.indexOf("_comment") < 0) {
       var target = targets[key];
-      if (target.productType === '"com.apple.product-type.application"') {
+      var pt = (target.productType || "").replace(/(^"|"$)/g, "");
+      if (pt === APP_PRODUCT_TYPE) {
         firstTargetUUID = key;
         break;
       }
