@@ -21,11 +21,7 @@ module.exports = function (context) {
   // Patch the project file to fix a .xcframework include error.
   let pbxProjContents = fs.readFileSync(pbxprojPath).toString();
   pbxProjContents = pbxProjContents.replace(
-    "path = libs/ios/nodemobile/NodeMobile.xcframework",
-    `path = "${relativeXcFrameworkPath}"`,
-  );
-  pbxProjContents = pbxProjContents.replace(
-    'path = "libs/ios/nodemobile/NodeMobile.xcframework"',
+    /path = "?libs\/ios\/nodemobile\/NodeMobile\.xcframework"?/g,
     `path = "${relativeXcFrameworkPath}"`,
   );
   fs.writeFileSync(pbxprojPath, pbxProjContents);
